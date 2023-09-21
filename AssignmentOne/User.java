@@ -5,85 +5,117 @@ import java.util.Random;
 
 public class User {
     private String name;
-    private BigInteger g, p, power, pk, friendpk, combinedpk;
-    private int[] messages;
+    private BigInteger g, p, privateKey, publicKey, friendsPublicKey;
+    private BigInteger[] inbox;
     private int messageCount;
 
     public User(String name, BigInteger g, BigInteger p) {
         this.name = name;
         this.g = g;
         this.p = p;
-        this.power = new BigInteger(p.bitLength(), new Random());
-        this.pk = g.modPow(power, p);
-        this.messages = new int[10];
+        this.privateKey = new BigInteger(p.bitLength(), new Random());
+        this.publicKey = g.modPow(privateKey, p);
+        this.inbox = new BigInteger[10];
         this.messageCount = 0;
-        this.friendpk = BigInteger.ZERO;
-        this.combinedpk = BigInteger.ZERO;
+        this.friendsPublicKey = BigInteger.ZERO;
     }
 
-    public void addMessage(String message) {
-        BigInteger messageInt = new BigInteger(message);
-        BigInteger r = new BigInteger(p.bitLength(), new Random());
-        BigInteger ciphertext1 = g.modPow(r, p);
-        BigInteger ciphertext2 = messageInt.multiply(pk.modPow(r, p)).mod(p);
-        
+    public void addMessage(String message, boolean encrypt) {
         if (messageCount < 10) {
-            messages[messageCount] = ciphertext1.intValue();
-            messages[messageCount + 1] = ciphertext2.intValue();
+            BigInteger ciphertext2;
+            // Encrypting the message if encrypt is true
+            if (encrypt) {
+                BigInteger[] ciphertext = encryptMessage(message);
+                ciphertext2 = ciphertext[1];
+                inbox[messageCount] = publicKey;
+            } else {
+                ciphertext2 = new BigInteger(message);
+                inbox[messageCount] = friendsPublicKey;
+            }
+            // Adding the message to the inbox
+            inbox[messageCount + 1] = ciphertext2;
             messageCount += 2;
+        } else {
+            System.out.println("Inbox is full");
         }
     }
-        
 
-    public String getMessages() {
+    private BigInteger[] encryptMessage(String message){
+        BigInteger messageInt = new BigInteger(message);
+        BigInteger ciphertext2 = messageInt.multiply(publicKey.modPow(privateKey, p)).mod(p);
+        BigInteger[] output = new BigInteger[2];
+        output[0] = publicKey;
+        output[1] = ciphertext2;
+        return output;
+    }
+        
+    public String getMessage(boolean decrypt) {
         if (messageCount < 2) {
-            return "No messages";
+            return "No messages in inbox";
         } else {
-            BigInteger ciphertext1 = BigInteger.valueOf(messages[0]);
-            BigInteger ciphertext2 = BigInteger.valueOf(messages[1]);
-            BigInteger s = ciphertext1.modPow(power, p);
-            BigInteger decryptedMessage = ciphertext2.multiply(s.modInverse(p)).mod(p);
-            String decryptedString = decryptedMessage.toString();
+            String decryptedString;
+            if (decrypt) {
+                decryptedString = decryptMessage(inbox);
+            } else {
+                decryptedString = inbox[1].toString();
+            }
     
             for (int i = 0; i < messageCount - 2; i += 2) {
-                messages[i] = messages[i + 2];
-                messages[i + 1] = messages[i + 3];
+                inbox[i] = inbox[i + 2];
+                inbox[i + 1] = inbox[i + 3];
             }
             messageCount -= 2;
     
             return decryptedString;
         }
     }
+
+    private String decryptMessage(BigInteger[] ciphertext){
+        BigInteger ciphertext1 = ciphertext[0];
+        BigInteger ciphertext2 = ciphertext[1];
+        BigInteger s = ciphertext1.modPow(privateKey, p);
+        BigInteger decryptedMessage = ciphertext2.multiply(s.modInverse(p)).mod(p);
+        String decryptedString = decryptedMessage.toString();
+        return decryptedString;
+    }
     
+    public void interceptEncryptedInbox(User user) {
+        this.messageCount = user.messageCount;
+        for (int i = 0; i < user.messageCount; i++) {
+            this.inbox[i] = user.inbox[i];
+        }
+    }
     
+    public void changeMessage(BigInteger multiplier) {
+        for (int i = 1; i < messageCount; i += 2) {
+            inbox[i] = inbox[i].multiply(multiplier);
+        }
+    }        
     
-
-    public void sendFriendpk(BigInteger friendpk) {
-        this.friendpk = friendpk;
-        this.combinedpk = friendpk.modPow(power, p);
+    public void pprint(){
+        System.out.println("------------------------");
+        System.out.println("Pretty print of: " + name);
+        System.out.println("------------------------");
+        System.out.println("g:                " + g);
+        System.out.println("p:                " + p);
+        System.out.println("privateKey:       " + privateKey);
+        System.out.println("publicKey:        " + publicKey);
+        System.out.println("friendsPublicKey: " + friendsPublicKey);
+        for (int i = 0; i < messageCount; i++) {
+            System.out.println("inbox[" + i + "]:         " + inbox[i]);
+        }
+        System.out.println("------------------------");
     }
 
-    public BigInteger getFriendpk() {
-        return friendpk;
+    public void sendFriendpk(BigInteger friendsPublicKey) {
+        this.friendsPublicKey = friendsPublicKey;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public BigInteger getG() {
-        return g;
-    }
-
-    public BigInteger getP() {
-        return p;
-    }
-
-    public BigInteger getPower() {
-        return power;
+    public void setPrivateKey(BigInteger privateKey) {
+        this.privateKey = privateKey;
     }
 
     public BigInteger getPk() {
-        return pk;
+        return publicKey;
     }
 }
