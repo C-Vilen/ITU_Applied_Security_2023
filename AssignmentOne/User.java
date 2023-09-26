@@ -4,10 +4,11 @@ import java.math.BigInteger;
 import java.util.Random;
 
 public class User {
-    private String name;
-    private BigInteger g, p, privateKey, publicKey, friendsPublicKey;
-    private BigInteger[] inbox;
-    private int messageCount;
+    private final String name;
+    private final BigInteger g, p, publicKey;
+    private volatile BigInteger privateKey, friendsPublicKey;
+    private volatile BigInteger[] inbox;
+    private volatile int messageCount;
 
     public User(String name, BigInteger g, BigInteger p) {
         this.name = name;
@@ -40,13 +41,10 @@ public class User {
         }
     }
 
-    private BigInteger[] encryptMessage(String message){
+        private BigInteger[] encryptMessage(String message){
         BigInteger messageInt = new BigInteger(message);
-        BigInteger ciphertext2 = messageInt.multiply(publicKey.modPow(privateKey, p)).mod(p);
-        BigInteger[] output = new BigInteger[2];
-        output[0] = publicKey;
-        output[1] = ciphertext2;
-        return output;
+        BigInteger ciphertext2 = messageInt.multiply(friendsPublicKey.modPow(privateKey, p)).mod(p);
+        return new BigInteger[]{publicKey, ciphertext2};
     }
         
     public String getMessage(boolean decrypt) {
@@ -75,8 +73,7 @@ public class User {
         BigInteger ciphertext2 = ciphertext[1];
         BigInteger s = ciphertext1.modPow(privateKey, p);
         BigInteger decryptedMessage = ciphertext2.multiply(s.modInverse(p)).mod(p);
-        String decryptedString = decryptedMessage.toString();
-        return decryptedString;
+        return decryptedMessage.toString();
     }
     
     public void interceptEncryptedInbox(User user) {
@@ -107,7 +104,7 @@ public class User {
         System.out.println("------------------------");
     }
 
-    public void sendFriendpk(BigInteger friendsPublicKey) {
+    public void sendFriendPublicKey(BigInteger friendsPublicKey) {
         this.friendsPublicKey = friendsPublicKey;
     }
 
@@ -115,7 +112,7 @@ public class User {
         this.privateKey = privateKey;
     }
 
-    public BigInteger getPk() {
+    public BigInteger getPublicKey() {
         return publicKey;
     }
 }

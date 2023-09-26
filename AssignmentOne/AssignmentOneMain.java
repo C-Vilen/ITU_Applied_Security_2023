@@ -14,18 +14,16 @@ public class AssignmentOneMain {
         User Bob = new User("Bob", sharedG, sharedP);
         
         // Alice sends her public key to Bob
-        Bob.sendFriendpk(Alice.getPk());
+        Bob.sendFriendPublicKey(Alice.getPublicKey());
         
         // Bob sends his public key to Alice
-        Alice.sendFriendpk(Bob.getPk());
-
-
+        Alice.sendFriendPublicKey(Bob.getPublicKey());
 
         // Alice creates a message and stores it in her inbox[]
         Alice.addMessage("2000", true);
 
         // Alice sends the message to Bob
-        Bob.addMessage(Alice.getMessage(true), true);
+        Bob.addMessage(Alice.getMessage(false), false);
         Alice.pprint();
         Bob.pprint();
         System.out.println("\n");
@@ -43,7 +41,7 @@ public class AssignmentOneMain {
         // Eve performs a brute-force attact to find bobs private key with his public key
         BigInteger privateKeyGuess = BigInteger.ONE;
         BigInteger result = sharedG.modPow(privateKeyGuess, sharedP);
-        while (!result.equals(Bob.getPk())) {
+        while (!result.equals(Bob.getPublicKey())) {
             privateKeyGuess = privateKeyGuess.add(BigInteger.ONE);
             result = sharedG.modPow(privateKeyGuess, sharedP);
         }
@@ -52,7 +50,7 @@ public class AssignmentOneMain {
         
         // Eve intercepts the message from Alice to Bob
         Alice.addMessage("2000", true);
-        Bob.addMessage(Alice.getMessage(true), true);
+        Bob.addMessage(Alice.getMessage(false), false);
         Eve.interceptEncryptedInbox(Bob);
         System.out.println("Eve has intercepted the message from Alice to Bob");
 
@@ -73,7 +71,6 @@ public class AssignmentOneMain {
         BigInteger multiplyAmount = BigInteger.valueOf(2);
 
         Alice.addMessage("2000", true);
-        Alice.pprint();
         Weave.interceptEncryptedInbox(Alice);
         Weave.pprint();
         Weave.changeMessage(multiplyAmount);
